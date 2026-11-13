@@ -1,0 +1,47 @@
+
+name: PHP CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php-check:
+    name: Check PHP Syntax
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Check PHP files
+        shell: bash
+        run: |
+          mapfile -d '' files < <(
+            find . -type f -name '*.php' \
+              -not -path './.git/*' \
+              -not -path './vendor/*' \
+              -not -path './node_modules/*' \
+              -print0
+          )
+
+          if (( ${#files[@]} == 0 )); then
+            echo "::error::No PHP files found."
+            exit 1
+          fi
+
+          for file in "${files[@]}"; do
+            echo "Checking: $file"
+            php -l "$file" || exit 1
+          done
+
+          echo "PHP syntax check completed successfully."
